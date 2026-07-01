@@ -1,19 +1,33 @@
 # DevOps Final Project
 
-Unified DevOps capstone that merges and improves three semester assignments into one production-ready, locally runnable system.
+This repository contains a full-stack DevOps capstone that combines work from three semester assignments into one locally runnable system. The application runs in Docker Compose with Prometheus, Grafana, Loki, and Promtail for metrics, logging, and alerting. CI/CD is handled through GitHub Actions with automated security scanning and deployment verification.
 
+**Repository:** https://github.com/kargimariam/devops_final
 
+## Requirement Mapping
 
-## Local Application
+| Requirement | Where it is implemented |
+|---|---|
+| One-command environment setup | `scripts/setup.ps1`, `scripts/setup.sh` |
+| Docker Compose infrastructure | `docker-compose.yml` |
+| CI pipeline (lint + tests) | `.github/workflows/ci-cd.yml` — `quality-gate` job |
+| CD / deployment verification | `deploy-verify` job, `scripts/deploy.sh`, `scripts/verify-deployment.sh` |
+| Security scanning | npm audit, Gitleaks, Hadolint, Trivy in CI |
+| Monitoring | Prometheus + Grafana (`prometheus/`, `grafana/`) |
+| Structured logging | JSON logs in `server.ts`, Loki + Promtail |
+| Alerting | `prometheus/alert_rules.yml` — `HighErrorRate` (CRITICAL) |
+| Health checks | `/api/health`, Docker healthcheck, `scripts/monitor.sh` |
+| Rollback | `scripts/rollback.sh` |
+| Incident response | `docs/INCIDENT_RESPONSE.md` |
+| Branching strategy | `main` and `dev` branches |
+| Application API + tests | `server.ts`, `src/App.test.tsx` |
 
-After running `.\scripts\setup.ps1`, open http://localhost:3000
-
-## What This Project Combines
+## Semester Work Integrated
 
 | Previous assignment | What was kept and improved |
 |---|---|
-| Assignment 1 (CI/CD + Render) | GitHub Actions pipeline with CI quality gate and automated deployment verification |
-| Assignment 2 (Observability Lab) | Prometheus, Grafana, Loki, Promtail, metrics, JSON logs, CRITICAL alerts |
+| Assignment 1 (CI/CD) | GitHub Actions pipeline with quality gate, security stage, and deploy verification |
+| Assignment 2 (Observability Lab) | Prometheus, Grafana, Loki, Promtail, custom metrics, JSON logs, CRITICAL alerts |
 | Midterm (IaC + Blue-Green) | One-command setup, blue-green deploy scripts, rollback, health monitoring |
 
 ## Architecture
@@ -38,6 +52,8 @@ flowchart LR
     Prom --> Alert[HighErrorRate CRITICAL]
 ```
 
+The React frontend and Express backend expose `/metrics` with `app_requests_total` and `app_errors_total` counters. Prometheus scrapes the application every 15 seconds. Grafana visualizes metrics and logs. Each HTTP request is written to stdout as a JSON log line; Promtail collects container logs and forwards them to Loki. The `HighErrorRate` alert fires when the error rate exceeds 5 errors per minute.
+
 ## Tech Stack
 
 - **Application:** React + TypeScript + Express
@@ -47,9 +63,9 @@ flowchart LR
 - **Security:** npm audit, Gitleaks, Hadolint, Trivy
 - **Metrics:** Prometheus + prom-client
 - **Logging:** JSON logs + Loki + Promtail
-- **Visualization & alerting:** Grafana
+- **Visualization and alerting:** Grafana
 
-## Quick Start (One Command)
+## Quick Start
 
 ### Windows (PowerShell)
 
@@ -63,12 +79,7 @@ flowchart LR
 bash scripts/setup.sh
 ```
 
-This single command:
-
-1. Creates `.env` if missing
-2. Builds and starts the app + observability stack
-3. Waits until the health check passes
-4. Prints all service URLs
+The setup script creates `.env` if missing, builds and starts the full stack, waits for the health check, and prints service URLs.
 
 ### Service URLs
 
@@ -81,31 +92,21 @@ This single command:
 | Grafana | http://localhost:3001 (admin / admin) |
 | Loki | http://localhost:3100 |
 
-### Platform notes
+### Windows command notes
 
-This project was developed and tested on Windows with PowerShell. Shell scripts (`.sh`) target Linux/macOS and run automatically in GitHub Actions on `ubuntu-latest`. On Windows, use the PowerShell setup script and Docker Compose commands below.
+Development was done on Windows with PowerShell. Shell scripts (`.sh`) are intended for Linux/macOS and run in GitHub Actions on `ubuntu-latest`.
 
-| Task | Windows (PowerShell) | Linux / macOS / Git Bash |
+| Task | Windows | Linux / macOS |
 |---|---|---|
-| One-command setup | `.\scripts\setup.ps1` | `bash scripts/setup.sh` |
+| Setup | `.\scripts\setup.ps1` | `bash scripts/setup.sh` |
 | Start stack | `docker compose up --build -d` | same |
 | Stop stack | `docker compose down` | same |
-| Lint and tests | `npm run lint` / `npm run test` | same |
-| Blue-green deploy | Git Bash: `bash scripts/deploy.sh` | `bash scripts/deploy.sh` |
-| Health monitor | Git Bash: `bash scripts/monitor.sh` | `bash scripts/monitor.sh` |
-| Trigger test errors | see Alerting section | `curl` loop in Alerting section |
+| Lint / tests | `npm run lint` / `npm run test` | same |
+| Deploy / rollback | Git Bash required | `bash scripts/deploy.sh` |
 
-To run `.sh` scripts locally on Windows, install [Git for Windows](https://git-scm.com/download/win) and use Git Bash.
+`.sh` scripts can also be run on Windows through [Git Bash](https://git-scm.com/download/win).
 
-Common PowerShell commands used during local development:
-
-```powershell
-.\scripts\setup.ps1
-Invoke-WebRequest "http://localhost:3000/api/health" -UseBasicParsing
-docker compose down
-```
-
-## Environment Setup (Manual Alternative)
+## Environment Setup (Manual)
 
 ```bash
 cp .env.example .env
@@ -132,35 +133,33 @@ graph LR
 
 ### Pipeline stages
 
-1. **Quality gate** – TypeScript lint + Vitest unit tests
-2. **Security** – npm audit, Gitleaks secrets scan, Hadolint Dockerfile lint, Docker Compose validation
-3. **Build & scan** – Docker image build + Trivy vulnerability scan
-4. **Deploy verify (main only)** – starts stack, runs health + metrics verification
+1. **Quality gate** — TypeScript lint and Vitest unit tests
+2. **Security** — npm audit, Gitleaks, Hadolint, Docker Compose validation
+3. **Build and scan** — Docker image build and Trivy vulnerability scan
+4. **Deploy verify (main only)** — starts the stack and runs health and metrics checks
 
-Broken code or critical security findings block the pipeline.
+Failed lint, tests, or security checks block the pipeline.
 
-## Deployment Workflow
+## Deployment
 
-### Docker deployment (primary – used for evaluation)
+### Docker Compose (primary)
 
 ```powershell
 .\scripts\setup.ps1
 ```
 
-Linux / macOS / Git Bash equivalent: `bash scripts/setup.sh`
+Linux / macOS equivalent: `bash scripts/setup.sh`
 
-Uses a **rolling update** via Docker Compose: new image is built, health check must pass, then traffic goes to the new container.
+Docker Compose rebuilds the image, waits for the health check to pass, and routes traffic to the updated container.
 
-### Blue-Green deployment (local simulation)
+### Blue-Green deployment (local)
 
 ```bash
 bash scripts/deploy.sh
 bash scripts/rollback.sh
 ```
 
-Requires bash (Git Bash on Windows). The CI pipeline on `main` also runs deployment verification via `scripts/verify-deployment.sh`.
-
-`deploy.sh` now runs real health checks before switching traffic (improved from midterm).
+`deploy.sh` runs lint, tests, a production build, and health checks before switching traffic. `rollback.sh` restores the previous version.
 
 ### Post-deployment verification
 
@@ -168,29 +167,31 @@ Requires bash (Git Bash on Windows). The CI pipeline on `main` also runs deploym
 bash scripts/verify-deployment.sh
 ```
 
-## Security Implementation
+This script is also executed in the `deploy-verify` CI job on `main`.
 
-| Control | Tool | Where |
+## Security
+
+| Control | Tool | Location |
 |---|---|---|
-| Dependency vulnerabilities | `npm audit` | CI security job |
+| Dependency vulnerabilities | npm audit | CI security job |
 | Secrets in repository | Gitleaks | CI security job |
 | Dockerfile best practices | Hadolint | CI security job |
 | Compose validation | `docker compose config` | CI security job |
 | Container image scanning | Trivy | CI build-and-scan job |
-| Secrets management | `.env.example` + `.gitignore` | Local env vars, never committed |
+| Secrets management | `.env.example`, `.gitignore` | Environment variables are not committed |
 
 ## Monitoring, Logging, and Alerting
 
 ### Metrics
 
-Custom Prometheus counters exposed at `/metrics`:
+Custom Prometheus counters at `/metrics`:
 
 - `app_requests_total{endpoint="..."}`
 - `app_errors_total`
 
 ### Logging
 
-Every request is logged as JSON to stdout. Promtail ships logs to Loki. Query in Grafana Explore:
+Request logs are written as JSON to stdout. Promtail ships them to Loki. Example Grafana Explore query:
 
 ```logql
 {job="devops-app"} | json | level="error"
@@ -198,9 +199,9 @@ Every request is logged as JSON to stdout. Promtail ships logs to Loki. Query in
 
 ### Alerting
 
-Prometheus rule `HighErrorRate` fires CRITICAL when error rate exceeds 5/minute.
+`HighErrorRate` in `prometheus/alert_rules.yml` fires at CRITICAL severity when the error rate exceeds 5 per minute.
 
-Trigger the alert manually:
+To trigger the alert for testing:
 
 ```powershell
 1..20 | ForEach-Object { Invoke-WebRequest "http://localhost:3000/api/simulate-error" -UseBasicParsing }
@@ -212,42 +213,37 @@ Linux / macOS / Git Bash:
 for i in $(seq 1 20); do curl http://localhost:3000/api/simulate-error; done
 ```
 
-Then check:
+Check results at http://localhost:9090/alerts and http://localhost:3001/alerting/list.
 
-- http://localhost:9090/alerts
-- http://localhost:3001/alerting/list
+## Reliability
 
-## Reliability Improvements
-
-- Docker health checks on the application container
-- Real health verification in `deploy.sh` (no fake sleep)
-- Automated post-deployment checks in CI and `verify-deployment.sh`
-- Rollback script restores previous blue-green version
-- Incident response documentation: `docs/INCIDENT_RESPONSE.md`
-- SLO: 99% availability target, 30-second health polling via `scripts/monitor.sh`
-
-### Health monitoring
+- Docker health check on the application container
+- Health verification in `deploy.sh` before traffic switch
+- Automated checks in CI (`deploy-verify`) and `scripts/verify-deployment.sh`
+- Rollback via `scripts/rollback.sh`
+- Incident response guide in `docs/INCIDENT_RESPONSE.md`
+- Health polling every 30 seconds in `scripts/monitor.sh` (logs to `health-check.log`)
 
 ```bash
 bash scripts/monitor.sh
 ```
 
-Results are appended to `health-check.log`.
-
 ## Branching Strategy
 
-- `main` – stable, deployable branch (triggers full CI/CD including deploy verify)
-- `dev` – integration branch (runs CI + security, no deploy verify)
+- `main` — stable branch; full CI/CD including deploy verification
+- `dev` — integration branch; CI and security without deploy verification
 
 ## Application Features
 
-- Dynamic route: `GET /api/projects/:id`
-- Input form: `POST /api/projects`
-- Health endpoint: `GET /api/health`
-- Error simulation: `GET /api/simulate-error`
-- Unit tests: `src/App.test.tsx`
+- `GET /api/projects/:id` — dynamic route
+- `POST /api/projects` — create project from form input
+- `GET /api/health` — health endpoint
+- `GET /api/simulate-error` — error simulation for alert testing
+- Unit tests in `src/App.test.tsx`
 
 ## Screenshots
+
+Evidence for setup, observability, alerting, and CI is included in the `screenshots/` folder.
 
 ### Running application
 
@@ -257,44 +253,27 @@ Results are appended to `health-check.log`.
 
 ![Health check JSON response](screenshots/02_health_endpoint.png)
 
-### Grafana dashboard (metrics + logs)
+### Grafana dashboard
 
 ![Grafana observability dashboard](screenshots/03_grafana_dashboard.png)
 
-### Loki log analysis (JSON logs)
+### Loki log analysis
 
 ![Loki Explore with JSON logs](screenshots/04_loki_logs.png)
 
 ![Filtered error logs in Loki](screenshots/05_loki_error_logs.png)
 
-### CRITICAL alert firing
+### CRITICAL alert
 
 ![Prometheus HighErrorRate alert firing](screenshots/06_alert_firing.png)
 
-### One-command environment setup
+### Environment setup
 
 ![Setup script success](screenshots/07_setup_script.png)
 
-### CI pipeline (add after GitHub push)
+### CI/CD pipeline
 
 ![GitHub Actions CI/CD pipeline](screenshots/08_github_actions.png)
-
-## Final Project Requirement Checklist
-
-| Requirement | Implementation | How to verify |
-|---|---|---|
-| One-command setup | `scripts/setup.ps1` | Screenshot `07_setup_script.png` |
-| Docker Compose | `docker-compose.yml` | `docker compose ps` |
-| CI (lint + tests) | `.github/workflows/ci-cd.yml` | GitHub Actions on push/PR |
-| CD (local deploy) | `deploy-verify` job + `deploy.sh` | Push to `main`, check Actions |
-| Security scanning | npm audit, Gitleaks, Hadolint, Trivy | Security job in GitHub Actions |
-| Monitoring | Prometheus + Grafana | Screenshot `03_grafana_dashboard.png` |
-| Logging | JSON logs + Loki + Promtail | Screenshots `04` and `05` |
-| Alerting | `prometheus/alert_rules.yml` | Screenshot `06_alert_firing.png` |
-| Health checks | `/api/health`, `monitor.sh` | Screenshot `02_health_endpoint.png` |
-| Rollback | `scripts/rollback.sh` | Documented in Deployment Workflow |
-| Incident response | `docs/INCIDENT_RESPONSE.md` | Read in repository |
-| Branching | `main` + `dev` | Both branches on GitHub |
 
 ## Stop the Environment
 
@@ -302,7 +281,7 @@ Results are appended to `health-check.log`.
 docker compose down
 ```
 
-Remove volumes too:
+Remove volumes:
 
 ```bash
 docker compose down -v
@@ -329,11 +308,3 @@ devops_final/
 ├── src/
 └── README.md
 ```
-
-## How to Submit
-
-1. Push this folder to a GitHub repository
-2. Ensure GitHub Actions passes on `main`
-3. Submit the repository link + this README
-
-All functionality runs locally with Docker — no paid cloud services required for evaluation.
