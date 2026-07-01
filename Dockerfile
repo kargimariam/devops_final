@@ -17,6 +17,7 @@ ENV APP_PORT=3000
 
 # hadolint ignore=DL3018
 RUN apk add --no-cache wget \
+  && apk upgrade --no-cache \
   && addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY package.json package-lock.json* ./

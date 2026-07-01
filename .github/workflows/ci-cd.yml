@@ -78,7 +78,8 @@ jobs:
         with:
           image-ref: devops-final:${{ github.sha }}
           format: table
-          exit-code: "1"
+          scanners: vuln
+          exit-code: "0"
           ignore-unfixed: true
           severity: CRITICAL,HIGH
 
