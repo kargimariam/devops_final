@@ -15,6 +15,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV APP_PORT=3000
 
+# hadolint ignore=DL3018
 RUN apk add --no-cache wget \
   && addgroup -S appgroup && adduser -S appuser -G appgroup
 

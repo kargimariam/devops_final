@@ -2,6 +2,14 @@
 
 Unified DevOps capstone that merges and improves three semester assignments into one production-ready, locally runnable system.
 
+## Repository
+
+**GitHub:** https://github.com/kargimariam/devops_final
+
+## Local Application
+
+After running `.\scripts\setup.ps1`, open http://localhost:3000
+
 ## What This Project Combines
 
 | Previous assignment | What was kept and improved |
@@ -209,16 +217,52 @@ Results are appended to `health-check.log`.
 
 ## Screenshots
 
-Place your latest screenshots in `screenshots/` and reference them here before submission.
+### Running application
 
-Examples from integrated previous work:
+![DevOps Hub application](screenshots/01_running_app.png)
 
-![Grafana dashboard](screenshots/grafana_dashboard.png)
-![Loki logs](screenshots/loki_logs1.png)
-![Alert firing](screenshots/alert_firing.png)
-![CI pipeline](screenshots/image.png)
+### Health endpoint
 
-> **Before submitting:** run the stack locally, take fresh screenshots of Grafana, alerts, CI pipeline, and the running app, and replace the images above if needed.
+![Health check JSON response](screenshots/02_health_endpoint.png)
+
+### Grafana dashboard (metrics + logs)
+
+![Grafana observability dashboard](screenshots/03_grafana_dashboard.png)
+
+### Loki log analysis (JSON logs)
+
+![Loki Explore with JSON logs](screenshots/04_loki_logs.png)
+
+![Filtered error logs in Loki](screenshots/05_loki_error_logs.png)
+
+### CRITICAL alert firing
+
+![Prometheus HighErrorRate alert firing](screenshots/06_alert_firing.png)
+
+### One-command environment setup
+
+![Setup script success](screenshots/07_setup_script.png)
+
+### CI pipeline (add after GitHub push)
+
+![GitHub Actions CI/CD pipeline](screenshots/08_github_actions.png)
+
+## Final Project Requirement Checklist
+
+| Requirement | Implementation | How to verify |
+|---|---|---|
+| One-command setup | `scripts/setup.ps1` | Screenshot `07_setup_script.png` |
+| Docker Compose | `docker-compose.yml` | `docker compose ps` |
+| CI (lint + tests) | `.github/workflows/ci-cd.yml` | GitHub Actions on push/PR |
+| CD (local deploy) | `deploy-verify` job + `deploy.sh` | Push to `main`, check Actions |
+| Security scanning | npm audit, Gitleaks, Hadolint, Trivy | Security job in GitHub Actions |
+| Monitoring | Prometheus + Grafana | Screenshot `03_grafana_dashboard.png` |
+| Logging | JSON logs + Loki + Promtail | Screenshots `04` and `05` |
+| Alerting | `prometheus/alert_rules.yml` | Screenshot `06_alert_firing.png` |
+| Health checks | `/api/health`, `monitor.sh` | Screenshot `02_health_endpoint.png` |
+| Rollback | `scripts/rollback.sh` | Documented in Deployment Workflow |
+| Incident response | `docs/INCIDENT_RESPONSE.md` | Read in repository |
+| Branching | `main` + `dev` | Both branches on GitHub |
 
 ## Stop the Environment
 
